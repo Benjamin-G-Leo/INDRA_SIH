@@ -6,7 +6,19 @@ import requests
 # Cleaned dictionary keys (no spaces/special characters)
 IMD_ENDPOINTS = {
     "city_forecast_7days": "https://api.imd.gov.in/api/v1/cityforecast?id=42182",
-    
+    "city_forecast_loc_7days": "https://api.imd.gov.in/api/v1/cityforecastloc?id=42182",
+    "current_weather": "https://api.imd.gov.in/api/v1/current_wx",
+    "district_nowcast": "https://api.imd.gov.in/api/v1/districtnowcast",
+    "district_warnings": "https://api.imd.gov.in/api/v1/districtwarning",
+    "district_rainfall": "https://api.imd.gov.in/api/v1/districtrainfall",
+    "station_nowcast": "https://api.imd.gov.in/api/v1/stationnowcast",
+    "state_rainfall": "https://api.imd.gov.in/api/v1/staterainfall",
+    "aws_mapping_data": "https://api.imd.gov.in/api/v1/aws_data",
+    "port_warning": "https://api.imd.gov.in/api/v1/portwarning",
+    "subdivisional_rainfall_forecast_7days": "https://api.imd.gov.in/api/v1/subdivision_rainfall_forecast",
+    "state_district_rainfall_forecast_5days": "https://api.imd.gov.in/api/v1/state_district_rainfall_forecast",
+    "cyclone_track": "https://api.imd.gov.in/api/v1/cyclone_track",
+    "cyclone_wind_warning": "https://api.imd.gov.in/api/v1/cyclone_wind"
 }
 
 HEADERS = {
