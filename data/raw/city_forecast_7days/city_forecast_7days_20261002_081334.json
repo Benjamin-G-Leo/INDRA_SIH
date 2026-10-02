@@ -1,0 +1,24 @@
+[
+  {
+    "Station_Code": "42182",
+    "Station_Name": "New Delhi",
+    "Date": "2026-10-02",
+    "Today_Max_temp": "33.5",
+    "Today_Min_temp": "22.8",
+    "Past_24_hrs_Rainfall": "5.2",
+    "Todays_Forecast": "Partly cloudy sky with light rain",
+    "Relative_Humidity_at_0830": "84",
+    "Relative_Humidity_at_1730": "68"
+  },
+  {
+    "Station_Code": "43285",
+    "Station_Name": "Bengaluru",
+    "Date": "2026-10-02",
+    "Today_Max_temp": "27.5",
+    "Today_Min_temp": "19.2",
+    "Past_24_hrs_Rainfall": "18.0",
+    "Todays_Forecast": "Generally cloudy sky with moderate rain",
+    "Relative_Humidity_at_0830": "92",
+    "Relative_Humidity_at_1730": "81"
+  }
+]
