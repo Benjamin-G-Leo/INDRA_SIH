@@ -1,8 +1,0 @@
-db_config.py
-.env
-__pycache__/
-*.pyc
-venv/
-.venv/
-*.safetensors
-*.bin
