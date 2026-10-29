@@ -97,7 +97,6 @@ def build(db, max_incidents=60, gap_hours=6, window_hours=6, use_model=True):
         g = c["posts"]
         district = Counter(p["district"] for p in g if p["district"]).most_common(1)
         district = district[0][0] if district else None
-        top = max(c["imd"], key=lambda r: SEV_RANK[SEV_MAP.get(r["severity"])], default=None)
         verified = bool(c["imd"]) and c["conf"] >= 50
         inc = dict(incidentId=iid, linkedEventId=eid, eventType=c["hazard"], place=district or c["state"], state=c["state"],
                    latitude=round(sum(p["latitude"] for p in g) / len(g), 4), longitude=round(sum(p["longitude"] for p in g) / len(g), 4),
@@ -107,7 +106,8 @@ def build(db, max_incidents=60, gap_hours=6, window_hours=6, use_model=True):
                    dataSource=DATA_SOURCE + ("+imd" if c["imd"] else ""), isSynthetic=True)
         if district: inc["district"] = district
         if c["sev"]: inc["severity"] = c["sev"]
-        val = reading(c["hazard"], top) if top else None
+        ranked = sorted(c["imd"], key=lambda r: SEV_RANK[SEV_MAP.get(r["severity"])], reverse=True)
+        val = next((v for v in (reading(c["hazard"], r) for r in ranked) if v), None)   # first matched bulletin that has the reading
         if val: inc["value"] = val
         incidents.append(inc)
 

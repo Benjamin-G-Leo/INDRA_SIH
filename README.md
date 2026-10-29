@@ -54,7 +54,6 @@ weather hazards early, judge how trustworthy each report is, and surface confirm
 | [`weather_platform_v2/`](weather_platform_v2/) | **Current data pipeline.** Realistic synthetic data generator, cleaning pipeline, evaluation, and the ML hazard classifier. Start here. |
 | [`weather_platform/`](weather_platform/) | First version of the pipeline, kept unchanged for reference. |
 | [`dashboard_prototype_2/`](dashboard_prototype_2/) | **Current dashboard** (Next.js): map, KPI cards, alerts and analysis. Reads the JSON exported by the pipeline. |
-| [`dashboard_prototype_1/`](dashboard_prototype_1/) | Earlier dashboard prototype (now only holds a nested copy of prototype 2 from a merge; safe to remove). |
 | [`Project Report/`](Project%20Report/) | PDF report of the data-pipeline and ML work. |
 
 ## Quick start

@@ -8,7 +8,7 @@ const kpis = (incidents: Incident[]) => [
 { icon: Radio, label: 'Total incident reports', value: incidents.length.toLocaleString(), delta: '+12.8%', tone: 'blue' },
 { icon: Activity, label: 'Active incidents', value: incidents.filter((i) => i.status !== 'Resolved').length.toString(), delta: '+4.2%', tone: 'cyan' },
 { icon: AlertTriangle, label: 'Critical alerts', value: incidents.filter((i) => i.severity === 'critical').length.toString(), delta: '+2', tone: 'red' },
-{ icon: Bot, label: 'AI-detected incidents', value: incidents.filter((i) => i.confidence > 90).length.toString(), delta: '+23.1%', tone: 'purple' },
+{ icon: Bot, label: 'High-confidence incidents (75%+)', value: incidents.filter((i) => i.confidence >= 75).length.toString(), delta: '+23.1%', tone: 'purple' },
 ]
 
 function Stat({

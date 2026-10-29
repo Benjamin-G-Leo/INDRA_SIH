@@ -244,7 +244,7 @@ export default function SelectedIncidentReport({
                 </div>
                 <div className="report-value">
                   <span className="eyebrow">CURRENT READING</span>
-                  <b>{inc.value}</b>
+                  <b>{inc.value || 'Not reported'}</b>
                   <small>Source: {inc.source} · {formatTimestamp(inc.time)}</small>
                 </div>
                 <div className="report-section compact">
