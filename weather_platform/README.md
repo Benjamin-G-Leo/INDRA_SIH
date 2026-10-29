@@ -43,7 +43,7 @@ logged in `rejected_records` with reason `record_id_conflict`. See CHANGELOG.md.
 
 ## Dataset notes
 * 5000 raw rows are deliberately noisy: ~6% spam, ~7% irrelevant, ~10% duplicates/reposts, ~3% resent IMD
-  bulletins, messy formats, typos, Hinglish and Hindi text. Expect about 4270 clean rows after processing.
+  bulletins, messy formats, typos, Hinglish and Hindi text. Expect about 4250 clean rows after processing.
 * `event_id` links IMD and public rows; `hazard_label` is the ML target; `_gt_noise` is ground truth used only
   by the evaluation printout (it never influences a filter decision).
 * Synthetic data: values follow IMD-style thresholds but are not real observations.

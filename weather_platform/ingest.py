@@ -61,7 +61,8 @@ def run(a):
     db = Database(a.db); db.create_schema(reset=a.reset)
     imd_rows, pub_rows = read_csv(a.imd), read_csv(a.public)
     gt = {r["record_id"]: r.get("_gt_noise", "") for r in imd_rows + pub_rows if r.get("record_id")}          # evaluation only
-    stats = Counter(); rejected = []                                                    # (raw_id, type, rid, stage, reason, dup_of, detail)
+    dup_of = {r["record_id"]: r.get("_gt_dup_of", "") for r in imd_rows + pub_rows if r.get("record_id")}
+    stats = Counter(); rejected = []                                                  # (raw_id, type, rid, stage, reason, dup_of, detail)
     rej = lambda raw, typ, rid, st, why, dup=None, det="": rejected.append((raw, typ, rid, st, why, dup, det[:255], fmt(now())))
 
     # ---- 1. landing
@@ -112,7 +113,7 @@ def run(a):
     db.insert("public_clean", PUB_COLS, [row(r, PUB_COLS) for r in pubs_ok])
     db.insert("rejected_records", ["raw_id", "source_type", "source_record_id", "stage", "reason", "duplicate_of", "detail", "rejected_at"], rejected)
     stats.update(imd_clean=len(imd_ok), public_clean=len(pubs_ok), rejected=len(rejected))
-    report = evaluate(rejected, gt, pubs_ok, imd_ok)
+    report = evaluate(rejected, gt, dup_of, pubs_ok, imd_ok)
     db.insert("pipeline_runs", ["batch_id", "started_at", "finished_at", "stats"], [(batch, fmt(t0), fmt(now()), json.dumps({"counts": stats, "eval": report}, default=str))])
     db.commit()
     show(db, batch, stats, rejected, report, pubs_ok, imd_ok)
@@ -120,20 +121,28 @@ def run(a):
     db.close()
 
 
-def evaluate(rejected, gt, pubs_ok, imd_ok):
+def evaluate(rejected, gt, dup_of, pubs_ok, imd_ok):
     """Compare pipeline decisions with the generator's ground truth (sample data only)."""
     removed = {r[2]: r[4] for r in rejected}
+    DEDUPE = {"exact_duplicate", "repost_duplicate", "near_duplicate", "duplicate_bulletin"}
     out = {}
-    for name, kinds in {"spam": {"spam"}, "irrelevant": {"irrelevant"}, "duplicates": {"duplicate_exact", "duplicate_repost", "duplicate_near", "duplicate"}}.items():
-        truth = {k for k, v in gt.items() if v in kinds}
-        reasons = {"spam": {"spam"}, "irrelevant": {"irrelevant"}, "duplicates": {"exact_duplicate", "repost_duplicate", "near_duplicate", "duplicate_bulletin"}}[name]
+    for name, reasons in {"spam": {"spam"}, "irrelevant": {"irrelevant"}}.items():
+        truth = {k for k, v in gt.items() if v == name}
         pred = {k for k, v in removed.items() if v in reasons}
         tp = len(truth & pred)
         out[name] = dict(truth=len(truth), flagged=len(pred), recall=round(tp / len(truth), 3) if truth else None, precision=round(tp / len(pred), 3) if pred else None)
+    # Duplicates are scored per pair: a copy and its original are "resolved" when at most one of them survives.
+    # (Which of two identical rows is kept does not matter, so removing the original instead of the copy is fine.)
+    pairs = [(k, dup_of[k]) for k, v in gt.items() if v.startswith("duplicate") and dup_of.get(k)]
+    in_pair = {x for p in pairs for x in p}
+    resolved = sum(1 for a, b in pairs if a in removed or b in removed)
+    pred = {k for k, v in removed.items() if v in DEDUPE}
+    out["duplicates"] = dict(truth=len(pairs), flagged=len(pred), recall=round(resolved / len(pairs), 3) if pairs else None,
+                             precision=round(len(pred & in_pair) / len(pred), 3) if pred else None)
     lab = [(r["hazard_label"], r["hazard_rule"]) for r in pubs_ok if r["hazard_label"]]
     cls = [(a, b) for a, b in lab if b]
     out["rule_categoriser"] = dict(coverage=round(len(cls) / len(lab), 3) if lab else None, accuracy_on_covered=round(sum(a == b for a, b in cls) / len(cls), 3) if cls else None)
-    out["genuine_lost"] = sum(1 for r in rejected if r[2] in gt and gt[r[2]] == "" )
+    out["genuine_lost"] = sum(1 for r in rejected if r[2] in gt and gt[r[2]] == "" and r[4] not in DEDUPE and r[4] != "record_id_conflict")
     out["noise_leaked_to_clean"] = sum(1 for r in pubs_ok if gt.get(r["record_id"]) in ("spam", "irrelevant"))
     return out
 

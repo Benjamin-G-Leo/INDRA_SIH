@@ -93,6 +93,81 @@ T = {  # hazard -> (english[], hinglish[], hindi[])
 "Ground Frost": (["Ground frost in {place} this morning, grass covered in white", "Frost on the ground at {place}, {tmin}°C, crops at risk", "White frost layer over fields in {place}, minimum {tmin}°C"], ["{place} me zameen par pala jam gaya, fasal ko khatra"], ["{place} में जमीन पर पाला, फसलों को नुकसान"]),
 "Heavy Snowfall": (["Heavy snowfall in {place}, {snow} cm overnight, roads blocked", "Fresh heavy snow at {place}, highway closed, tourists stranded", "Snowfall continues in {place}, over {snow} cm, power lines down"], ["{place} me bhari barfbari, sadak band, {snow} cm"], ["{place} में भारी बर्फबारी, सड़कें बंद"]),
 }
+# More ways real people phrase the same event (still use hazard words, so the rule tagger can catch them).
+EXTRA = {
+"Heatwave": ["Loo ke thapede in {place}, {tmax}C and even night wont cool. Heat wave is real", "{place}: heat wave claims lives, hospitals report heatstroke cases, mercury {tmax}C", "Cant step outside in {place}, tar melting on road, heatwave day 3"],
+"Hot Day": ["{place} hitting {tmax} today, proper hot day, fans on full", "Hot day in {place}. {tmax}C and not a breeze", "Garam din in {place}, {tmax} degree"],
+"Hot & Humid": ["Hot and humid in {place} again, shirt drenched in 5 mins", "{place} humid af today, {hum}% humidity, power cut makes it worse", "Uff umas in {place}, {tmax} degree aur {hum}% humidity"],
+"Warm Night": ["Warm night again in {place}, {tmin}C at 1am, AC running non stop", "Hot night at {place}, cant sleep, min temp {tmin}C"],
+"Cold Wave": ["Cold wave in {place}, {tmin}C this morning, bonfires everywhere", "Shitlahar continues in {place}, {tmin} degree, schools shifted timings", "{place} shivering, cold wave alert, night shelters full"],
+"Cold Day": ["Cold day in {place}, sun missing since morning, max {tmax}C", "Din bhar thand in {place}, sirf {tmax} degree, cold day"],
+"Fog": ["Fog in {place} so thick, visibility {vis}m, flights diverted", "{place} expressway closed due to dense fog, pileup reported", "Kohra in {place}, gaadi chalana mushkil, visibility {vis} meter"],
+"Ground Frost": ["Frost on cars and fields in {place}, {tmin}C overnight", "Pala pada hai {place} me, kheton me safedi, {tmin} degree"],
+"Heavy Snowfall": ["Snowfall in {place} since last night, {snow} cm and counting, power cut", "Heavy snow at {place}, NH closed, tourists stuck in hotels", "Barfbari in {place}, {snow} cm, sadak band"],
+"Heavy Rainfall": ["Heavy rain in {place} for 6 hrs now, {rain} mm, waterlogging near underpass", "Heavy rains lash {place}, offices asked to work from home", "{place} me bhari barish, {rain} mm, local trains slow"],
+"Very Heavy Rainfall": ["Very heavy rain in {place}, {rain} mm, schools closed tomorrow", "Torrential rain since midnight in {place}, orange alert, underpasses flooded", "Bahut bhari barish {place} me, {rain} mm, log ghar me band"],
+"Extremely Heavy Rainfall": ["Extremely heavy rain in {place}, {rain} mm, red alert, people on rooftops", "Cloudburst at {place}, {rain} mm in hours, NDRF called", "Ati bhari barish {place}, red alert, {rain} mm"],
+"Cyclone": ["Cyclone landfall in {place} expected tonight, winds {wind} kmph, shelters open", "Cyclone update: {place} coast on high alert, ferries suspended", "Cyclone ke karan {place} me hawa {wind} kmph, bijli band"],
+"Extreme Wind": ["Extreme winds in {place}, {wind} kmph, trees and poles down", "Destructive gusts hit {place}, sheds flew off, wind {wind} kmph"],
+"Strong Surface Winds": ["Strong winds in {place} since afternoon, {wind} kmph gusts", "Very windy in {place}, dust in eyes, {wind} kmph", "Tez hawa chal rahi {place} me, {wind} kmph"],
+"Flood": ["Flood water entering homes in {place}, rescue boats deployed, river above danger mark", "Flood alert for {place}: embankment breached, villages submerged", "Baadh ka pani {place} me ghus gaya, rescue boat chahiye"],
+"Thunderstorm": ["Thunderstorm in {place}, trees down, power cut, {wind} kmph gusts", "Thunder and gusty thunderstorm over {place}, evening commute hit", "Aandhi toofan with thunder in {place}, light gayab"],
+"Lightning": ["Lightning killed two farmers near {place}, villagers shaken", "Lightning flashes all over {place} sky, frequent strikes", "Bijli girne se {place} me gaay ki maut, lightning ka khatra"],
+"Thunderstorm & Lightning": ["Thunderstorm and lightning over {place}, heavy rain, power cut", "Thunder lightning rain together in {place}, stay indoors", "{place} me gaj ke saath bijli chamak rahi hai aur thunderstorm"],
+"Hailstorm": ["Hailstorm in {place}, hail size of marbles ({hail} mm), crops flattened", "Hail pelted {place} for 10 mins, rooftops dented", "Ole gire {place} me, fasal barbad"],
+"Dust Storm": ["Dust storm in {place}, sky turned brown, visibility {vis} m", "Dust storm warning: {place} under thick dust, trains stopped", "Dhool bhari aandhi in {place}, kuch dikh nahi raha"],
+"Dust-Raising Winds": ["Dust raising winds in {place}, dusty haze all day, {wind} kmph", "Dusty winds again in {place}, cars covered in dust"],
+"Squall": ["Squall hit {place} suddenly, {wind} kmph gusts, boats tossed", "Squall at {place}, tin roofs flying, sudden gusty winds"],
+}
+# Posts that describe the event WITHOUT any hazard keyword -> the rule tagger cannot label them; an ML model has to.
+INDIRECT = {
+"Heatwave": ["Car thermometer showing {tmax}C in {place}, nobody on the roads at noon, cattle collapsing", "{place} feels like an oven. {tmax} degrees, hospital OPD full of sunstroke cases"],
+"Hot Day": ["{tmax}C in {place} today, sweating through the shirt by 10am", "{place} is baking, {tmax} degrees and the fan just blows hot air"],
+"Hot & Humid": ["{place}: {tmax}C with {hum}% air moisture, clothes never dry, constant sweat", "Sweating even in the shade at {place}, {hum}% air moisture"],
+"Warm Night": ["Cant sleep, {tmin}C at midnight in {place}, pillows are hot", "Even at 2am it is {tmin} degrees in {place}, terrace full of people"],
+"Cold Wave": ["{place} at {tmin}C, people burning tyres for warmth, rickshaw pullers in shawls", "Hands numb in {place}, {tmin} degrees, shelters full tonight"],
+"Cold Day": ["No sun in {place} all day, stuck at {tmax}C, everybody wearing sweaters at noon", "Gloomy and freezing in {place}, {tmax} degree even at 2pm"],
+"Fog": ["Cant see the car ahead in {place}, visibility {vis} m, trains running 4 hrs late", "Headlights on at 10am in {place}, white wall on the highway, {vis} meter visibility"],
+"Ground Frost": ["White layer on the fields in {place}, {tmin}C, potato crop at risk", "Water pipes frozen in {place} this morning, {tmin} degrees, car windows iced"],
+"Heavy Snowfall": ["Roads buried under {snow} cm white in {place}, tourists stuck in hotels", "Waking up to {snow} cm of white outside in {place}, highway shut, no electricity"],
+"Heavy Rainfall": ["Water up to ankle on {place} main road, buses crawling, {rain} mm in the gauge", "Left office at 6, still stuck in {place}, roads are rivers, {rain} mm since noon"],
+"Very Heavy Rainfall": ["Roads are rivers in {place}, {rain} mm since midnight, two wheelers abandoned", "Sky opened up over {place}, {rain} mm since night, drains gurgling over"],
+"Extremely Heavy Rainfall": ["Never seen water like this in {place}, {rain} mm, houses cut off, calls for help everywhere", "Whole street under water in {place}, {rain} mm overnight, NDRF boats are on the way"],
+"Cyclone": ["Whole coast of {place} being evacuated, winds {wind} kmph, sea is roaring, fishing boats pulled in", "Sea has swallowed the beach road at {place}, {wind} kmph, shelters open, NDRF at the coast"],
+"Extreme Wind": ["Roofs ripped off in {place}, {wind} kmph, hoarding fell on parked cars", "{wind} kmph winds in {place} snapped poles like twigs, whole colony without light"],
+"Strong Surface Winds": ["Windy in {place}, {wind} kmph, scooters struggling on the bridge", "Flags and banners flying sideways in {place}, {wind} kmph"],
+"Flood": ["Water in our ground floor in {place}, cars floating down the lane, need rescue", "Whole village marooned near {place}, boats rescuing people, river over the bank"],
+"Thunderstorm": ["Sky turned black and loud booms over {place}, branches down, power gone", "Sudden dark sky, strong gusts and big booms in {place}, power cut on the whole street"],
+"Lightning": ["Sky lit up purple over {place} all night, farm worker struck near the pond", "Huge flashes near {place}, transformer blasted, two cows dead in the field"],
+"Thunderstorm & Lightning": ["Booming sky, flashes and downpour over {place}, power cut, take cover", "Black clouds, flashes and loud booms with rain over {place}, power off since 7"],
+"Hailstorm": ["Ice pellets {hail} mm falling on {place}, windshields cracked, crops battered", "White balls of ice pounding the roof in {place}, mango crop damaged"],
+"Dust Storm": ["Orange sky in {place}, visibility {vis} m, cant breathe, eyes burning, trains halted", "Brown wall of dust rolled across {place}, visibility {vis} m, lights on at 4pm"],
+"Dust-Raising Winds": ["Grit in the air and on every surface in {place}, {wind} kmph breeze, cars coated", "Fine dust flying everywhere in {place} since morning, {wind} kmph, eyes watery"],
+"Squall": ["Out of nowhere a violent gust hit {place}, {wind} kmph, fishing boats tossed", "Sudden violent jolt of wind at {place}, {wind} kmph, shop signs crashing"],
+}
+# Awkward-but-real phrasings: vague, sarcastic, a question, a forecast share, a mixed-hazard report.
+HARD = [
+    "Is it just me or is {place} having {hz} right now?", "Lovely {hz} in {place}, exactly what I needed today 🙄",
+    "IMD says {hz} likely over {place} next 48 hrs, be careful everyone", "{hz} in {place} and {hz2} too. What is going on with the weather",
+    "Heard there is {hz} in {place}, anyone confirm?", "Reports of {hz} from {place}, authorities have not confirmed yet",
+    "{place} feels like {hz} today honestly", "Just crossed {place}, {hz} for sure, pls stay safe",
+]
+HARD_NEG = [   # weather words, but nothing is happening -> should be rejected by the relevance filter
+    "Planning a trip to {place} next week, hope the weather is good", "Monsoon is my favourite season, chai and pakoda time ☕",
+    "Weather app says normal day in {place}, nothing to worry about", "Which umbrella should I buy for the rainy season?",
+    "Throwback to the 2018 floods, we have come a long way as a state", "Winter collection launch in {place} this weekend, sweaters and jackets",
+    "Heat pump or AC? Need advice for my new flat in {place}", "Beautiful sunset in {place} today, no clouds anywhere 🌅",
+]
+NEIGHBOUR = {   # hazards a tired annotator could mix up
+    "Heavy Rainfall": ["Very Heavy Rainfall"], "Very Heavy Rainfall": ["Heavy Rainfall", "Extremely Heavy Rainfall"],
+    "Extremely Heavy Rainfall": ["Very Heavy Rainfall"], "Thunderstorm": ["Thunderstorm & Lightning"], "Lightning": ["Thunderstorm & Lightning"],
+    "Thunderstorm & Lightning": ["Thunderstorm", "Lightning"], "Hot Day": ["Heatwave"], "Heatwave": ["Hot Day"],
+    "Cold Wave": ["Cold Day"], "Cold Day": ["Cold Wave"], "Dust Storm": ["Dust-Raising Winds"], "Dust-Raising Winds": ["Dust Storm"],
+    "Strong Surface Winds": ["Extreme Wind"], "Extreme Wind": ["Strong Surface Winds", "Squall"], "Squall": ["Extreme Wind"],
+    "Hot & Humid": ["Hot Day"], "Warm Night": ["Hot & Humid"],
+}
+LABEL_NOISE = .02
+SMS = {"please": "pls", "heavy": "hvy", "tomorrow": "tmrw", "people": "ppl", "because": "bcoz", "continues": "contd", "today": "2day"}
 LANDMARKS = ["near the main market", "near railway station", "near bus stand", "in the old city", "near the highway",
              "near the airport road", "near the river bridge", "near the central hospital", "in the colony area"]
 TAILS = ["Stay safe everyone.", "Authorities please act.", "Situation getting worse.", "Please avoid travel.",
@@ -198,9 +273,13 @@ def fmt_metric(v, kind, messy):
 
 
 def typo(s):
+    """Swap two letters, drop one, or double one."""
     if len(s) < 8: return s
     i = random.randint(1, len(s) - 3)
-    return s[:i] + s[i + 1] + s[i] + s[i + 2:]
+    kind = random.choice(["swap", "drop", "double"])
+    if kind == "swap": return s[:i] + s[i + 1] + s[i] + s[i + 2:]
+    if kind == "drop": return s[:i] + s[i + 1:]
+    return s[:i] + s[i] + s[i:]
 
 
 def rand_handle():
@@ -271,10 +350,17 @@ def build_imd(events, n_total):
         # identical timestamps/values; only the bulletin number and casing differ
         d["bulletin_no"] = o["bulletin_no"][:-5] + f"{random.randint(1, 99999):05d}"
         d["hazard_type"] = o["hazard_type"].upper() if random.random() < .5 else o["hazard_type"]
-        d["_gt_noise"] = "duplicate"
+        d["_gt_noise"] = "duplicate"; d["_orig"] = o
         rows.append(d)
     random.shuffle(rows)
-    for i, r in enumerate(rows, 1): r["record_id"] = f"IMD-{i:06d}"
+    return number(rows, "IMD")
+
+
+def number(rows, prefix):
+    """Assign record ids, then record which row each duplicate was copied from (evaluation only)."""
+    for i, r in enumerate(rows, 1): r["record_id"] = f"{prefix}-{i:06d}"
+    for r in rows:
+        o = r.pop("_orig", None); r["_gt_dup_of"] = o["record_id"] if o else ""
     return rows
 
 
@@ -293,17 +379,24 @@ def public_text(ev, source, place_shown, state):
     h = ev["hazard"]
     en, hing, hi = T[h]
     lang = random.choices(["en", "hing", "hi"], [.6, .25, .15])[0]
-    tpl = random.choice({"en": en, "hing": hing, "hi": hi}[lang])
+    roll = random.random()
+    if roll < .12: tpl = random.choice(INDIRECT[h])            # no hazard keyword: only ML can label these
+    elif roll < .20: tpl = random.choice(HARD)                  # vague / sarcastic / question / forecast / mixed
+    elif roll < .45: tpl = random.choice(EXTRA[h])
+    else: tpl = random.choice({"en": en, "hing": hing, "hi": hi}[lang])
     m = {k: jit(v, .08) for k, v in ev["m"].items() if v is not None}
     loc = place_shown + (" " + random.choice(LANDMARKS) if random.random() < .6 else "")
-    text = tpl.format(place=loc, state=state, tmax=f"{m['tmax']:.1f}", tmin=f"{m['tmin']:.1f}", rain=f"{m['rain']:.0f}",
+    plain = lambda x: x.lower().replace("&", "and").replace("-", " ")
+    text = tpl.format(place=loc, state=state, hz=plain(h), hz2=plain(random.choice(NEIGHBOUR.get(h) or [h])),
+                      tmax=f"{m['tmax']:.1f}", tmin=f"{m['tmin']:.1f}", rain=f"{m['rain']:.0f}",
                       wind=f"{m['wind']:.0f}", vis=f"{m['vis']:.0f}", snow=f"{m['snow']:.0f}", hail=f"{m['hail']:.0f}",
                       hum=f"{min(100, m['hum']):.0f}", feels=f"{m['tmax'] + (m['hum'] - 40) * .1:.0f}")
     if random.random() < .3: text = random.choice(PREFIXES) + " " + text
     if random.random() < .5: text += " " + random.choice(TAILS)
     if random.random() < .25: text += " " + random.choice(HAZ_EMOJI)
     if random.random() < .3: text += " #" + h.replace(" ", "").replace("&", "And").replace("-", "") + random.choice(["", " #IMD", " #Weather"])
-    if random.random() < .04: text = typo(text)
+    if random.random() < .08: text = typo(text)
+    if random.random() < .06: text = " ".join(SMS.get(w.lower(), w) for w in text.split())
     if random.random() < .03: text = text.upper()
     if source == "news_portal": text = random.choice(["BREAKING: ", "", ""]) + text + random.choice([" | Staff Reporter", " | Our Bureau", ""])
     elif source == "whatsapp_forward": text = "Forwarded many times: " + text + " Please share to all 🙏"
@@ -323,19 +416,21 @@ def public_row(ev, source=None):
     if has_geo and random.random() < .015: la, lo = random.choice([(0.0, 0.0), (lo, la)])  # garbage coordinates
     ts_style = "twitter" if source == "twitter_x" and random.random() < .5 else None
     ts = posted.astimezone(timezone.utc).strftime("%a %b %d %H:%M:%S +0000 %Y") if ts_style else fmt_ts(posted)
+    label = ev["hazard"]
+    if random.random() < LABEL_NOISE and label in NEIGHBOUR: label = random.choice(NEIGHBOUR[label])   # annotator mix-up
     return dict(
         record_id="", event_id=ev["event_id"], source=source, source_handle=rand_handle(), posted_at=ts, text=text,
         state=state if tag else "", district=shown if tag and random.random() < .8 else "",
         latitude=f"{la:.5f}" if la is not None else "", longitude=f"{lo:.5f}" if lo is not None else "",
         followers=int(random.lognormvariate(6, 2)), likes=int(random.expovariate(1 / 8)), shares=int(random.expovariate(1 / 3)),
-        has_media=int(random.random() < (.4 if source == "citizen_app" else .15)), hazard_label=ev["hazard"], _gt_noise="", _dt=posted,
+        has_media=int(random.random() < (.4 if source == "citizen_app" else .15)), hazard_label=label, _gt_hazard=ev["hazard"], _gt_noise="", _dt=posted,
     )
 
 
 def noise_row(kind):
     when = datetime(random.choice([2022, 2023, 2024, 2025]), random.randint(1, 12), random.randint(1, 28), random.randint(0, 23), random.randint(0, 59), tzinfo=IST)
     st = random.choice(list(GEO)); d = random.choice(list(GEO[st]))
-    tpl = random.choice(SPAM if kind == "spam" else IRRELEVANT)
+    tpl = random.choice(SPAM if kind == "spam" else IRRELEVANT + HARD_NEG)
     text = tpl.format(r="".join(random.choices("abcdefghjkmnpqrstuvwxyz23456789", k=6)), phone=f"9{random.randint(100000000, 999999999)}", place=d)
     source = random.choices(list(SOURCES), list(SOURCES.values()))[0]
     spam = kind == "spam"
@@ -344,7 +439,7 @@ def noise_row(kind):
         state=st if random.random() < .3 else "", district="", latitude="", longitude="",
         followers=int(random.lognormvariate(2.5, 1.2)) if spam else int(random.lognormvariate(6, 2)),
         likes=int(random.expovariate(1 / 3)), shares=int(random.expovariate(1 / 150)) if spam else int(random.expovariate(1 / 3)),
-        has_media=int(random.random() < .1), hazard_label="", _gt_noise=kind,
+        has_media=int(random.random() < .1), hazard_label="", _gt_hazard="", _gt_noise=kind,
     )
 
 
@@ -362,7 +457,7 @@ def make_dup(o):
         if len(words) > 4: words.insert(random.randint(1, len(words) - 1), random.choice(["urgent", "again", "very", "still"]))
         d["text"] = " ".join(words)
         if random.random() < .5: d["text"] = typo(d["text"])
-    d["_gt_noise"] = f"duplicate_{kind}"
+    d["_gt_noise"] = f"duplicate_{kind}"; d["_orig"] = o
     # posted slightly later than the original
     d["_dt"] = o["_dt"] + timedelta(minutes=random.randint(1, 90))
     d["posted_at"] = fmt_ts(d["_dt"], "iso")
@@ -384,9 +479,8 @@ def build_public(events, n_total):
     rows += [make_dup(random.choice(genuine)) for _ in range(n_dup)]
     rows += [noise_row("spam") for _ in range(n_spam)] + [noise_row("irrelevant") for _ in range(n_irr)]
     random.shuffle(rows)
-    for i, r in enumerate(rows, 1):
-        r["record_id"] = f"PUB-{i:06d}"; r.pop("_dt", None)
-    return rows
+    for r in rows: r.pop("_dt", None)
+    return number(rows, "PUB")
 
 
 def write_csv(path, rows):

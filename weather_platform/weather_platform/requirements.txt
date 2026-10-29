@@ -1,2 +1,0 @@
-# SQLite mode needs nothing (stdlib only). For MySQL:
-pymysql>=1.1
