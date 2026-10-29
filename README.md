@@ -72,7 +72,8 @@ pip install -r requirements.txt
 python generate_dataset.py                       # 2,000 IMD rows + 3,000 public posts -> data/
 python ingest.py --reset --export data/clean     # clean + load into weather_platform.db
 python train_classifier.py                       # train and evaluate the hazard classifier
-python -m unittest discover -s tests -v          # 15 regression tests
+python export_dashboard.py                       # build the dashboard dataset (uses the model if trained)
+python -m unittest discover -s tests -v          # 19 tests
 ```
 
 To load into MySQL instead of SQLite:
@@ -82,13 +83,15 @@ python ingest.py --reset --db "mysql://root:YourPassword@localhost:3306/weather_
 Special characters in the password must be URL-encoded (`@` becomes `%40`). The MySQL path is implemented but not yet tested against a live server.
 
 ### 2. Dashboard
+The repository already contains a generated dataset, so the dashboard runs without step 1.
 ```bash
-cd weather_platform_v2 && python export_dashboard.py     # writes the dataset the dashboard reads
-cd ../dashboard_prototype_2
+cd dashboard_prototype_2
 npm install
-npm run dev
+npm run dev          # development server, usually http://localhost:3000
+npm test             # 14 unit tests
+npm run build && npm start     # production build
 ```
-Open the local address printed by Next.js (usually <http://localhost:3000>).
+To refresh the data, re-run `python export_dashboard.py` in `weather_platform_v2/` and reload the page (the dashboard also re-reads the file every 10 seconds).
 
 ## Data pipeline
 
@@ -156,9 +159,28 @@ The hand-written score is the one to quote. Scores on synthetic splits are optim
 
 [`dashboard_prototype_2/`](dashboard_prototype_2/) is the frontend: **Next.js, React, TypeScript and Tailwind CSS**.
 
-- **Home:** filter toolbar, KPI cards, a live intelligence map of India, an incident report panel, and an alert system with acknowledge actions.
-- **Analysis:** charts and analysis view.
-- **Data:** incidents, alerts and reports come from `public/data/indra-dataset.json`, written by `weather_platform_v2/export_dashboard.py` from the cleaned database (incidents are built from posts, verified against IMD records, scored for confidence). The file is re-read every 10 seconds and on Refresh. KPI change figures and the System Health panel are still demonstration values.
+![Home: incident map, KPI cards and alert stream](Project%20Report/screenshots/dashboard_home.png)
+
+- **Home:** filter toolbar, a live intelligence map of India (markers coloured by IMD severity), an incident report panel that drills from state to district to incident, KPI cards, and a red/orange/yellow alert stream.
+- **Analysis:** reports over time (1H to 1Y), incidents by type and state, reports by source, top incidents by confidence, and reliability figures.
+- **Help and Privacy** pages, light/dark theme, and an accessible skip link.
+
+| Incident detail | Analysis |
+|---|---|
+| ![Incident detail](Project%20Report/screenshots/dashboard_incident_detail.png) | ![Analysis page](Project%20Report/screenshots/dashboard_analysis.png) |
+
+### From pipeline to dashboard
+`weather_platform_v2/export_dashboard.py` turns the cleaned database into `dashboard_prototype_2/public/data/indra-dataset.json` (schema 1.0.0, defined in `lib/types.ts`):
+
+1. Every clean public post gets a hazard: the rule tag if a rule fired, otherwise the ML model's guess. Ground-truth columns are never used.
+2. Posts with the same state and hazard are chained into one **incident** while no gap exceeds 6 hours.
+3. An **IMD bulletin** for the same state and hazard inside that window *verifies* the incident: it sets the severity colour (Red, Orange, Yellow, Green) and supplies the reading (for example 48.2 C or 341 mm).
+4. **Confidence** is the mean credibility of the supporting posts. Alerts are created only where IMD gives a severity.
+5. The dashboard loads and validates the file. If it is missing, it shows an error and does **not** fall back to other data.
+
+Current export: 60 incidents, 59 alerts, 885 source records, all marked synthetic. Options (`--max-incidents`, `--gap-hours`, `--window-hours`, `--no-model`) are described in the [pipeline README](weather_platform_v2/README.md).
+
+Still demonstration values: the KPI change percentages (for example +12.8%), the System Health panel, and the fixed "Source consensus: Medium" label on incident cards.
 
 ## Known limitations
 
@@ -169,12 +191,14 @@ The hand-written score is the one to quote. Scores on synthetic splits are optim
 - **Corrected IMD bulletins are not applied as updates;** the first version wins.
 - **MySQL support is untested** against a live server.
 - **Model files are pickles.** Only load model files you trained yourself.
+- **Dashboard shows a recorded sample, not live data.** Incident dates are 2022-2025, nearly every incident is IMD-verified because the generator creates a bulletin for almost every event, and a few panels are demo values (see above).
 
 ## Roadmap
 
 - [ ] Blind evaluation set written by a teammate; re-score the classifier
 - [ ] Credibility model combining classifier output, corroboration, source trust and IMD match
 - [x] Pipeline-to-dashboard export (JSON file)
+- [x] Dashboard bug review and fixes (filters, charts, refresh, time formatting)
 - [ ] Replace the JSON file with a live API layer over the database
 - [ ] Live ingestion (IMD feed, social-media APIs) in place of the CSV reader
 - [ ] Image and video verification of media attached to posts
@@ -183,4 +207,4 @@ The hand-written score is the one to quote. Scores on synthetic splits are optim
 
 ## Project report
 
-A PDF summary of the pipeline and ML work, with results tables and next steps, is in [`Project Report/`](Project%20Report/INDRA_Session_Report.pdf).
+A 9-page PDF report covering the pipeline review, the ML classifier, the dashboard connection (with screenshots), results tables and next steps is in [`Project Report/`](Project%20Report/INDRA_Session_Report.pdf).
