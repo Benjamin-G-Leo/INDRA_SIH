@@ -1,1 +1,0 @@
-﻿        <section id="welcome" className="help-section" style={{ display: visibleSectionIds.includes('welcome') ? undefined : 'none' }}>
