@@ -19,9 +19,10 @@ weather hazards early, judge how trustworthy each report is, and surface confirm
 5. [ML hazard classifier](#ml-hazard-classifier)
 6. [Results](#results)
 7. [Dashboard](#dashboard)
-8. [Known limitations](#known-limitations)
-9. [Roadmap](#roadmap)
-10. [Project report](#project-report)
+8. [Bugs found and fixed](#bugs-found-and-fixed)
+9. [Known limitations and open issues](#known-limitations-and-open-issues)
+10. [Roadmap](#roadmap)
+11. [Project report](#project-report)
 
 ---
 
@@ -182,7 +183,38 @@ Current export: 60 incidents, 59 alerts, 885 source records, all marked syntheti
 
 Still demonstration values: the KPI change percentages (for example +12.8%), the System Health panel, and the fixed "Source consensus: Medium" label on incident cards.
 
-## Known limitations
+## Bugs found and fixed
+
+A full review of the pipeline, the classifier and the teammate's dashboard found no crashes, but these real bugs. All are fixed unless listed under [open issues](#known-limitations-and-open-issues).
+
+**Data pipeline and ML (`weather_platform_v2/`)**
+
+| Bug | Effect | Fix |
+|---|---|---|
+| Evaluation counted a kept copy of a resent IMD bulletin as a "lost genuine record" | Reported 40 genuine records lost; the real number was about 7 | Duplicates are now scored per original/copy pair; the metric ignores deduplication decisions (12 genuine losses on the new data) |
+| Synthetic posts came from a few fixed templates | Any model scores about 99% and proves nothing | Generator now adds posts with no hazard keyword, vague/sarcastic/forecast/mixed-hazard posts, typos, SMS short-forms and 2% label noise |
+| Saved classifier could only be loaded by a script that defined its class | `export_dashboard.py` could not use the model; hidden at first because the test script happened to define the class | Model class moved to `hazard_model.py` and retrained |
+| Weather-word posts with no event ("hope the weather is good for my trip") passed the relevance filter | Noise in the clean data | Added non-event phrases and impact cues to the lexicons (0 noise leaked on the new data) |
+| Unused imports and variables, no guard for empty input | Lint warnings, possible crash on an empty database | Cleaned up; training stops with a clear message if the database is empty |
+| Nested duplicate folder `weather_platform/weather_platform/`, committed `.db` file, no `.gitignore` | Clutter and repo bloat | Folder removed, `.gitignore` added |
+
+**Dashboard (`dashboard_prototype_2/`)**
+
+| Bug | Effect | Fix |
+|---|---|---|
+| Filter listed "Hot and Humid" but the data says "Hot & Humid" | Those incidents could never be filtered | Name corrected |
+| Bar charts added a `%` sign and scaled bars to 100 | 5 incidents showed as "5%" | Bars scale to the largest value; counts shown as counts |
+| 10-second "sync" only waited 400 ms | Nothing was ever reloaded | Now re-reads the dataset file |
+| Time chart counted back from today's date | Empty chart for 2022-2025 data | Window ends at the newest report; added 30D and 1Y ranges |
+| A failed background refresh replaced the whole screen with an error | Dashboard blanked on a network blip | Keeps showing the last good data; only a failed first load is an error |
+| Analysis page had a `<main>` inside another `<main>` | Invalid page structure for screen readers | Inner element changed to a `<div>` |
+| Times shown as raw text (`2022-06-20T17:39:00Z`) | Hard to read | Formatted in IST, with unit tests |
+| Analysis panels used invented numbers (84% agreement, 128,450 reports, 99.9% uptime shown as data) | Misleading | Computed from the loaded data; remaining demo values are labelled |
+| Incident with no reading showed a blank "current reading"; KPI "AI-detected incidents" showed 0 | Confusing | "Not reported" fallback; KPI renamed "High-confidence incidents (75%+)" |
+| Alert list keys used only the incident id | Possible duplicate-key problem with several alerts per incident | Key now includes time and event |
+| Data source object re-created on every render; unused imports | Wasted work, noise | Removed |
+
+## Known limitations and open issues
 
 - **Synthetic data only.** Real IMD and social-media feeds are not connected, so accuracy on real posts is unknown.
 - **The classifier only picks a hazard.** It does not decide whether a post is real; spam and relevance filters run first for that.
@@ -190,6 +222,7 @@ Still demonstration values: the KPI change percentages (for example +12.8%), the
 - **Duplicate detection works within a single batch;** reposts arriving in a later run are not caught.
 - **Corrected IMD bulletins are not applied as updates;** the first version wins.
 - **MySQL support is untested** against a live server.
+- **Open dashboard issues:** the KPI change percentages and System Health panel are demo values; "Source consensus: Medium" on every incident card is a fixed placeholder; `dashboard_prototype_2/` still tracks about 35 scratch files (build logs, `fix_*.py`, `__pycache__`) from development.
 - **Model files are pickles.** Only load model files you trained yourself.
 - **Dashboard shows a recorded sample, not live data.** Incident dates are 2022-2025, nearly every incident is IMD-verified because the generator creates a bulletin for almost every event, and a few panels are demo values (see above).
 
