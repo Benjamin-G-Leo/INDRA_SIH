@@ -1,0 +1,5 @@
+# SQLite mode needs nothing (stdlib only). For MySQL:
+pymysql>=1.1
+# For train_classifier.py:
+scikit-learn>=1.4
+joblib>=1.3
