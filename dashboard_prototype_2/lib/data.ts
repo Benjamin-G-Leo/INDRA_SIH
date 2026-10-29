@@ -2209,7 +2209,7 @@ export const filterOptions = {
 
   'Hot Day',
 
-  'Hot and Humid',
+  'Hot & Humid',
 
   'Warm Night',
 

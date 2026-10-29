@@ -136,41 +136,64 @@ export class StaticPrototypeDataSource implements IncidentDataSource {
   }
 
   private validateDataset(dataset: PrototypeDataset): void {
-    if (dataset.schemaVersion !== '1.0.0') {
-      throw new Error(`Unsupported schema version: ${dataset.schemaVersion}`)
-    }
+    validateDataset(dataset)
+  }
+}
 
-    const incidentIds = dataset.incidents.map(i => i.incidentId)
-    if (new Set(incidentIds).size !== incidentIds.length) {
-      throw new Error('Duplicate incidentId in dataset')
-    }
+/** Checks a dataset against the schema contract. Throws on the first problem. */
+export function validateDataset(dataset: PrototypeDataset): void {
+  if (dataset.schemaVersion !== '1.0.0') {
+    throw new Error(`Unsupported schema version: ${dataset.schemaVersion}`)
+  }
 
-    const validIncidentIds = new Set(incidentIds)
-    for (const alert of dataset.alerts) {
-      if (!validIncidentIds.has(alert.incidentId)) {
-        throw new Error(
-          `Alert ${alert.alertId} references unknown incidentId ${alert.incidentId}`
-        )
-      }
-    }
+  const incidentIds = dataset.incidents.map(i => i.incidentId)
+  if (new Set(incidentIds).size !== incidentIds.length) {
+    throw new Error('Duplicate incidentId in dataset')
+  }
 
-    for (const inc of dataset.incidents) {
-      if (!inc.isSynthetic) {
-        throw new Error(`Incident ${inc.incidentId} is not marked isSynthetic`)
-      }
-    }
-    for (const alert of dataset.alerts) {
-      if (!alert.isSynthetic) {
-        throw new Error(`Alert ${alert.alertId} is not marked isSynthetic`)
-      }
-    }
-    for (const rec of dataset.sourceRecords) {
-      const id = rec.kind === 'public' ? rec.sourceRecordId : rec.recordId
-      if (!rec.isSynthetic) {
-        throw new Error(`Source record ${id} is not marked isSynthetic`)
-      }
+  const validIncidentIds = new Set(incidentIds)
+  for (const alert of dataset.alerts) {
+    if (!validIncidentIds.has(alert.incidentId)) {
+      throw new Error(
+        `Alert ${alert.alertId} references unknown incidentId ${alert.incidentId}`
+      )
     }
   }
+
+  for (const inc of dataset.incidents) {
+    if (!inc.isSynthetic) {
+      throw new Error(`Incident ${inc.incidentId} is not marked isSynthetic`)
+    }
+  }
+  for (const alert of dataset.alerts) {
+    if (!alert.isSynthetic) {
+      throw new Error(`Alert ${alert.alertId} is not marked isSynthetic`)
+    }
+  }
+  for (const rec of dataset.sourceRecords) {
+    const id = rec.kind === 'public' ? rec.sourceRecordId : rec.recordId
+    if (!rec.isSynthetic) {
+      throw new Error(`Source record ${id} is not marked isSynthetic`)
+    }
+  }
+}
+
+/* ------------------------------------------------------------------ */
+/*  Remote implementation: the JSON written by the pipeline           */
+/*  (weather_platform_v2/export_dashboard.py)                         */
+/* ------------------------------------------------------------------ */
+
+export const DEFAULT_DATASET_URL = process.env.NEXT_PUBLIC_DATASET_URL ?? '/data/indra-dataset.json'
+
+/** Fetches and validates the pipeline dataset. Never falls back to other data: errors are thrown to the caller. */
+export async function loadRemoteDataset(url: string = DEFAULT_DATASET_URL): Promise<PrototypeDataset> {
+  const res = await fetch(url, { cache: 'no-store' })
+  if (!res.ok) {
+    throw new Error(`Could not load ${url} (HTTP ${res.status}). Run export_dashboard.py in weather_platform_v2 to create it.`)
+  }
+  const dataset = (await res.json()) as PrototypeDataset
+  validateDataset(dataset)
+  return dataset
 }
 
 /* ------------------------------------------------------------------ */

@@ -1,10 +1,9 @@
 'use client'
 
-import { createContext, useContext, useEffect, useState } from 'react'
+import { createContext, useCallback, useContext, useEffect, useRef, useState } from 'react'
 import { type FilterState } from './FilterToolbar'
-import { StaticPrototypeDataSource } from '@/lib/data-source'
-import type { CanonicalIncident, CanonicalAlert, SourceRecord, PublicReport } from '@/lib/types'
-import { adaptIncidentToDashboard, adaptAlertToDashboard } from '@/lib/data-source'
+import type { CanonicalIncident, SourceRecord, PublicReport } from '@/lib/types'
+import { adaptIncidentToDashboard, adaptAlertToDashboard, loadRemoteDataset } from '@/lib/data-source'
 import type { Incident, Alert } from '@/lib/types'
 
 type FilterContextValue = {
@@ -16,6 +15,12 @@ type FilterContextValue = {
   filteredReports: PublicReport[]
   loading: boolean
   error: Error | null
+  /** Dataset timestamp written by the pipeline (ISO), once loaded. */
+  generatedAt: string | null
+  /** Newest public-report timestamp in the whole dataset (ISO). The analysis charts end here, not at the wall clock. */
+  latestReportAt: string | null
+  /** Re-reads the dataset file without showing the loading screen. Resolves when done. */
+  refresh: () => Promise<void>
 }
 
 const FilterContext = createContext<FilterContextValue | null>(null)
@@ -23,31 +28,33 @@ const FilterContext = createContext<FilterContextValue | null>(null)
 export function FilterProvider({ children }: { children: React.ReactNode }) {
   const [filters, setFilter, reset] = useFilterState()
   const [data, setData] = useState<{ incidents: Incident[]; alerts: Alert[]; sourceRecords: SourceRecord[] } | null>(null)
+  const [generatedAt, setGeneratedAt] = useState<string | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<Error | null>(null)
 
-  const dataSource = new StaticPrototypeDataSource('@/test-data/indra-prototype.json')
+  const hasData = useRef(false)
 
-  useEffect(() => {
-    let cancelled = false
-    dataSource
-      .loadDataset()
-      .then(dataset => {
-        if (cancelled) return
-        const idMap = buildIdMap(dataset.incidents)
-        const incidents = dataset.incidents.map(inc => adaptIncidentToDashboard(inc, idMap))
-        const alerts = dataset.alerts.map(alert => adaptAlertToDashboard(alert, idMap))
-        const sourceRecords = dataset.sourceRecords
-        setData({ incidents, alerts, sourceRecords })
-        setLoading(false)
+  const load = useCallback(async () => {
+    try {
+      const dataset = await loadRemoteDataset()
+      const idMap = buildIdMap(dataset.incidents)
+      setData({
+        incidents: dataset.incidents.map(inc => adaptIncidentToDashboard(inc, idMap)),
+        alerts: dataset.alerts.map(alert => adaptAlertToDashboard(alert, idMap)),
+        sourceRecords: dataset.sourceRecords,
       })
-      .catch(err => {
-        if (cancelled) return
-        setError(err)
-        setLoading(false)
-      })
-    return () => { cancelled = true }
+      setGeneratedAt(dataset.generatedAt)
+      hasData.current = true
+      setError(null)
+    } catch (err) {
+      // A failed background refresh keeps the data already on screen; only a failed first load is an error state.
+      if (!hasData.current) setError(err instanceof Error ? err : new Error(String(err)))
+    } finally {
+      setLoading(false)
+    }
   }, [])
+
+  useEffect(() => { void load() }, [load])
 
   const filteredIncidents = data
     ? data.incidents.filter(inc => matchesFilters(inc, filters))
@@ -72,6 +79,10 @@ export function FilterProvider({ children }: { children: React.ReactNode }) {
         })
     : []
 
+  const latestReportAt = data
+    ? data.sourceRecords.reduce<string | null>((m, r) => (r.kind === 'public' && (m === null || r.postedAt > m) ? r.postedAt : m), null)
+    : null
+
   return (
     <FilterContext.Provider
       value={{
@@ -83,6 +94,9 @@ export function FilterProvider({ children }: { children: React.ReactNode }) {
         filteredReports,
         loading,
         error,
+        generatedAt,
+        latestReportAt,
+        refresh: load,
       }}
     >
       {children}

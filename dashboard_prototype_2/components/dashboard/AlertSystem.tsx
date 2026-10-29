@@ -3,7 +3,7 @@
 import { Bot } from 'lucide-react'
 import { useState } from 'react'
 import type { Alert, Incident } from '@/lib/types'
-import { type FreshnessState } from '@/lib/utils'
+import { formatTimestamp, type FreshnessState } from '@/lib/utils'
 import Panel from './Panel'
 
 export default function AlertSystem({
@@ -75,13 +75,13 @@ export default function AlertSystem({
           return (
             <div
               className={`alert ${alert.sev}`}
-              key={alert.incidentId}
+              key={`${alert.incidentId}-${alert.time}-${alert.event}`}
               onClick={() => onAlertClick(alert.incidentId)}
               style={{ cursor: 'pointer' }}
             >
               <div className="alert-line">
                 <span className={`severity-tag ${alert.sev}`}>{alert.sev}</span>
-                <time>{alert.time}</time>
+                <time>{formatTimestamp(alert.time)}</time>
               </div>
               <h3>
                 {alert.event} <small>· {alert.place}</small>

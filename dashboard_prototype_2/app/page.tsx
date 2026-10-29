@@ -8,18 +8,17 @@ import KPISection from '@/components/dashboard/KPISection'
 import LiveIntelligence from '@/components/dashboard/LiveIntelligence'
 import AlertSystem from '@/components/dashboard/AlertSystem'
 import { computeFreshness, type FreshnessState } from '@/lib/utils'
-import Link from 'next/link'
 
 export default function HomePage() {
-  const { filters, setFilter, reset, filteredIncidents, filteredAlerts, loading, error } = useSharedFilters()
+  const { filters, setFilter, reset, filteredIncidents, filteredAlerts, loading, error, refresh } = useSharedFilters()
   const [selectedId, setSelectedId] = useState<number | null>(null)
   const [currentTime, setCurrentTime] = useState<Date | null>(null)
   const [lastSync, setLastSync] = useState<Date | undefined>(undefined)
 
-// After hydration, establish a real lastSync timestamp
-useEffect(() => {
-  setLastSync(new Date())
-}, [])
+  // After hydration, establish a real lastSync timestamp
+  useEffect(() => {
+    setLastSync(new Date())
+  }, [])
   const [syncing, setSyncing] = useState<boolean>(false)
 
   const freshness: FreshnessState = computeFreshness(lastSync, syncing)
@@ -31,18 +30,16 @@ useEffect(() => {
     return () => clearInterval(clock)
   }, [])
 
-  // Perform a dashboard refresh of static mock data (shared by auto-sync + manual refresh).
-  const performSync = useCallback(() => {
+  // Re-read the pipeline dataset (shared by auto-sync + manual refresh).
+  const performSync = useCallback(async () => {
     setSyncing(true)
-    setTimeout(() => {
-      setLastSync(new Date())
-      setSyncing(false)
-    }, 400)
-  }, [])
+    await refresh()
+    setLastSync(new Date())
+    setSyncing(false)
+  }, [refresh])
 
-  // 10-second dashboard sync (recompute of static mock data)
+  // 10-second dashboard sync (re-reads the dataset file)
   useEffect(() => {
-    performSync()
     const sync = setInterval(performSync, 10_000)
     return () => clearInterval(sync)
   }, [performSync])

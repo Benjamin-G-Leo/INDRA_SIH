@@ -2,17 +2,18 @@
 
 import type { ReactNode } from 'react'
 
-export function Bars({ data, color = 'cyan' }: { data: [string, number][]; color?: string }) {
+export function Bars({ data, color = 'cyan', suffix = '' }: { data: [string, number][]; color?: string; suffix?: string }) {
+  const max = Math.max(1, ...data.map(([, v]) => Number(v)))
   return (
     <div className="bars">
       {data.map(([name, val]) => (
         <div className="bar-row" key={name}>
           <div className="bar-label">
             <span>{name}</span>
-            <b>{val}{typeof val === 'number' && val < 100 ? '%' : ''}</b>
+            <b>{val}{suffix}</b>
           </div>
           <div className="bar-track">
-            <i className={color} style={{ width: `${Math.min(Number(val), 100)}%` }} />
+            <i className={color} style={{ width: `${(Number(val) / max) * 100}%` }} />
           </div>
         </div>
       ))}

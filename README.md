@@ -53,7 +53,8 @@ weather hazards early, judge how trustworthy each report is, and surface confirm
 |---|---|
 | [`weather_platform_v2/`](weather_platform_v2/) | **Current data pipeline.** Realistic synthetic data generator, cleaning pipeline, evaluation, and the ML hazard classifier. Start here. |
 | [`weather_platform/`](weather_platform/) | First version of the pipeline, kept unchanged for reference. |
-| [`dashboard_prototype_1/`](dashboard_prototype_1/) | Next.js dashboard (map, KPI cards, alert list). Uses mock data for now. |
+| [`dashboard_prototype_2/`](dashboard_prototype_2/) | **Current dashboard** (Next.js): map, KPI cards, alerts and analysis. Reads the JSON exported by the pipeline. |
+| [`dashboard_prototype_1/`](dashboard_prototype_1/) | Earlier dashboard prototype (now only holds a nested copy of prototype 2 from a merge; safe to remove). |
 | [`Project Report/`](Project%20Report/) | PDF report of the data-pipeline and ML work. |
 
 ## Quick start
@@ -83,7 +84,8 @@ Special characters in the password must be URL-encoded (`@` becomes `%40`). The 
 
 ### 2. Dashboard
 ```bash
-cd dashboard_prototype_1
+cd weather_platform_v2 && python export_dashboard.py     # writes the dataset the dashboard reads
+cd ../dashboard_prototype_2
 npm install
 npm run dev
 ```
@@ -153,11 +155,11 @@ The hand-written score is the one to quote. Scores on synthetic splits are optim
 
 ## Dashboard
 
-[`dashboard_prototype_1/`](dashboard_prototype_1/) is the frontend: **Next.js, React, TypeScript and Tailwind CSS**.
+[`dashboard_prototype_2/`](dashboard_prototype_2/) is the frontend: **Next.js, React, TypeScript and Tailwind CSS**.
 
 - **Home:** filter toolbar, KPI cards, a live intelligence map of India, an incident report panel, and an alert system with acknowledge actions.
 - **Analysis:** charts and analysis view.
-- **Data:** hard-coded incidents in `lib/data.ts`. Connecting it to the database is on the roadmap.
+- **Data:** incidents, alerts and reports come from `public/data/indra-dataset.json`, written by `weather_platform_v2/export_dashboard.py` from the cleaned database (incidents are built from posts, verified against IMD records, scored for confidence). The file is re-read every 10 seconds and on Refresh. KPI change figures and the System Health panel are still demonstration values.
 
 ## Known limitations
 
@@ -173,7 +175,8 @@ The hand-written score is the one to quote. Scores on synthetic splits are optim
 
 - [ ] Blind evaluation set written by a teammate; re-score the classifier
 - [ ] Credibility model combining classifier output, corroboration, source trust and IMD match
-- [ ] API layer between the database and the dashboard; replace the mock incidents
+- [x] Pipeline-to-dashboard export (JSON file)
+- [ ] Replace the JSON file with a live API layer over the database
 - [ ] Live ingestion (IMD feed, social-media APIs) in place of the CSV reader
 - [ ] Image and video verification of media attached to posts
 - [ ] Emergency-service alert dispatch (SMS, email, webhook)

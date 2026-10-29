@@ -57,3 +57,14 @@ python train_classifier.py        # trains on split=train, prints val/test/hand-
 TF-IDF (words + character n-grams) -> logistic regression. Best used as a **hybrid**: keep the rule tag when a rule fires,
 ask the model otherwise. `tests/hand_labeled.csv` (113 posts written by hand, not by the generator) is the score to quote.
 Scores on the synthetic splits are optimistic because the generator reuses templates; swap in real posts when you get API access.
+
+## Dashboard export (export_dashboard.py)
+```powershell
+python ingest.py --reset
+python train_classifier.py        # optional, lets the ML model tag posts the rules miss
+python export_dashboard.py        # writes ../dashboard_prototype_2/public/data/indra-dataset.json
+```
+Builds incidents from the cleaned posts and writes the JSON file the dashboard reads (schema 1.0.0). It never uses the ground-truth
+columns (`event_id`, `hazard_label`): each post gets the rule tag, or the ML model's guess when no rule fires; posts with the same state and
+hazard are chained into one incident (max 6 h gap); an IMD record for the same state and hazard inside that window verifies the incident and
+supplies its severity colour and reading. Confidence is the mean post credibility. Options: `--max-incidents`, `--gap-hours`, `--window-hours`, `--no-model`.

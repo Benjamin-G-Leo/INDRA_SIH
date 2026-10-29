@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { computeFreshness } from '@/lib/utils'
+import { computeFreshness, formatTimestamp } from '@/lib/utils'
 
 describe('computeFreshness', () => {
   it('returns updating when syncing is true', () => {
@@ -28,5 +28,16 @@ describe('computeFreshness', () => {
     const recentDate = new Date(Date.now() - 30_000) // 30 seconds ago
     expect(computeFreshness(recentDate, false, 10_000)).toBe('stale')
     expect(computeFreshness(recentDate, false, 60_000)).toBe('fresh')
+  })
+})
+describe('formatTimestamp', () => {
+  it('formats an ISO timestamp in IST', () => {
+    expect(formatTimestamp('2025-01-09T07:56:17Z')).toContain('IST')
+    expect(formatTimestamp('2025-01-09T07:56:17Z')).toContain('13:26')
+  })
+
+  it('leaves non-date text unchanged', () => {
+    expect(formatTimestamp('SYNTHETIC')).toBe('SYNTHETIC')
+    expect(formatTimestamp('41 min ago')).toBe('41 min ago')
   })
 })

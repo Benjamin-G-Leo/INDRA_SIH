@@ -4,6 +4,7 @@
 import { useState, useEffect } from 'react'
 import type { Incident } from '@/lib/types'
 import type { FilterState } from './FilterToolbar'
+import { formatTimestamp } from '@/lib/utils'
 
 const SEVERITY_COLORS: Record<string, string> = {
   critical: 'var(--critical)',
@@ -244,7 +245,7 @@ export default function SelectedIncidentReport({
                 <div className="report-value">
                   <span className="eyebrow">CURRENT READING</span>
                   <b>{inc.value}</b>
-                  <small>Source: {inc.source} · {inc.time}</small>
+                  <small>Source: {inc.source} · {formatTimestamp(inc.time)}</small>
                 </div>
                 <div className="report-section compact">
                   <span className="eyebrow">AI INTELLIGENCE</span>

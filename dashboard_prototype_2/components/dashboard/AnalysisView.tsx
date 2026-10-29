@@ -1,25 +1,30 @@
-﻿'use client'
+'use client'
 
 import { useState, useMemo } from 'react'
 import { Bot } from 'lucide-react'
 import Panel from './Panel'
 import { Bars, Donut } from './Charts'
 import SystemHealth from './SystemHealth'
-import {
-  sourcesData,
-  aiClassificationData,
-  aiRiskRows,
-  incidents,
-} from '@/lib/data'
 import type { PublicReport } from '@/lib/types'
 import { useSharedFilters } from './FilterContext'
 
+type Range = '1H' | '6H' | '24H' | '7D' | '30D' | '1Y'
+const RANGES: Range[] = ['1H', '6H', '24H', '7D', '30D', '1Y']
+
+/** Top-N counts of a list of labels, as [label, count] pairs. */
+function countBy(labels: string[], top = 5): [string, number][] {
+  const counts = new Map<string, number>()
+  for (const l of labels) if (l) counts.set(l, (counts.get(l) ?? 0) + 1)
+  return Array.from(counts.entries()).sort((a, b) => b[1] - a[1]).slice(0, top)
+}
+
 export default function AnalysisView() {
-  const { filteredReports, filteredIncidents } = useSharedFilters()
-  const [range, setRange] = useState<'1H' | '6H' | '24H' | '7D'>('24H')
+  const { filteredReports, filteredIncidents, latestReportAt } = useSharedFilters()
+  const [range, setRange] = useState<Range>('24H')
 
   const IST = 'Asia/Kolkata'
-  const now = new Date()
+  // Charts end at the newest report in the dataset (the data is a recorded sample, not live).
+  const now = useMemo(() => (latestReportAt ? new Date(latestReportAt) : new Date()), [latestReportAt])
 
   const windowStart = useMemo(() => {
     const d = new Date(now)
@@ -28,8 +33,10 @@ export default function AnalysisView() {
       case '6H': d.setHours(d.getHours() - 6); return d
       case '24H': d.setDate(d.getDate() - 1); return d
       case '7D': d.setDate(d.getDate() - 7); return d
+      case '30D': d.setDate(d.getDate() - 30); return d
+      case '1Y': d.setFullYear(d.getFullYear() - 1); return d
     }
-  }, [range])
+  }, [range, now])
 
   const bucketConfig = useMemo(() => {
     switch (range) {
@@ -37,6 +44,8 @@ export default function AnalysisView() {
       case '6H': return { count: 6, interval: 60 * 60 * 1000, fmt: { hour: 'numeric', hour12: false } as Intl.DateTimeFormatOptions }
       case '24H': return { count: 12, interval: 2 * 60 * 60 * 1000, fmt: { hour: 'numeric', hour12: false } as Intl.DateTimeFormatOptions }
       case '7D': return { count: 7, interval: 24 * 60 * 60 * 1000, fmt: { weekday: 'short' } as Intl.DateTimeFormatOptions }
+      case '30D': return { count: 30, interval: 24 * 60 * 60 * 1000, fmt: { day: 'numeric' } as Intl.DateTimeFormatOptions }
+      case '1Y': return { count: 12, interval: 30 * 24 * 60 * 60 * 1000, fmt: { month: 'short' } as Intl.DateTimeFormatOptions }
     }
   }, [range])
 
@@ -63,7 +72,7 @@ export default function AnalysisView() {
       if (!event) continue
       counts.set(event, (counts.get(event) || 0) + 1)
     }
-    return Array.from(counts.entries()).sort((a, b) => b[1] - a[1])
+    return Array.from(counts.entries()).sort((a, b) => b[1] - a[1]).slice(0, 8)
   }, [filteredIncidents])
 
   const stateDistribution = useMemo(() => {
@@ -82,17 +91,37 @@ export default function AnalysisView() {
     const { count: bucketCount, interval } = bucketConfig
     return Array.from({ length: bucketCount }, (_, i) => {
       const t = new Date(windowStart.getTime() + i * interval)
-      return t.toLocaleTimeString('en-IN', { timeZone: IST, ...bucketConfig.fmt })
+      return t.toLocaleString('en-IN', { timeZone: IST, ...bucketConfig.fmt })
     })
   }, [windowStart, bucketConfig])
 
   const maxCount = Math.max(1, ...timeSeriesData.map(d => d.count))
   const totalReports = timeSeriesData.reduce((s, d) => s + d.count, 0)
 
-  const primaryIncident = incidents[0]
+  const reportsBySource = useMemo(() => countBy(filteredReports.map(r => r.source), 8), [filteredReports])
+  const reportsByHazard = useMemo(() => countBy(filteredReports.map(r => r.disasterTypeClaimed ?? ''), 5), [filteredReports])
+  const topIncidents = useMemo(() => [...filteredIncidents].sort((a, b) => b.confidence - a.confidence || b.reports - a.reports).slice(0, 3), [filteredIncidents])
+
+  const summary = useMemo(() => {
+    const n = filteredIncidents.length
+    const verified = filteredIncidents.filter(i => i.status === 'Verified').length
+    const avgConfidence = n ? Math.round(filteredIncidents.reduce((s, i) => s + i.confidence, 0) / n) : 0
+    const scored = filteredReports.filter(r => typeof r.credibilityScore === 'number')
+    const reliability = scored.length ? (scored.reduce((s, r) => s + (r.credibilityScore ?? 0), 0) / scored.length) * 100 : 0
+    return {
+      incidents: n,
+      reports: filteredReports.length,
+      critical: filteredIncidents.filter(i => i.severity === 'critical').length,
+      verifiedPct: n ? Math.round((verified / n) * 100) : 0,
+      avgConfidence,
+      reliability,
+      platforms: new Set(filteredReports.map(r => r.source)).size,
+      level: avgConfidence >= 75 ? 'High' : avgConfidence >= 50 ? 'Medium' : 'Low',
+    }
+  }, [filteredIncidents, filteredReports])
 
   return (
-    <main className="dashboard">
+    <div>
       <div className="section-head">
         <div>
           <span className="eyebrow">ANALYTICS LAYER</span>
@@ -104,7 +133,7 @@ export default function AnalysisView() {
         {totalReports > 0 ? (
           <Panel title="Reports over time" className="trend-panel" action={
             <div className="range-tabs">
-              {(['1H', '6H', '24H', '7D'] as const).map((x) => (
+              {RANGES.map((x) => (
                 <button
                   className={range === x ? 'active' : ''}
                   key={x}
@@ -116,12 +145,6 @@ export default function AnalysisView() {
             </div>
           }>
             <p className="caption">District filtering for public reports uses reported locality and may not exactly match official district boundaries.</p>
-            <div className="chart-legend">
-              <span className="cyan">▲ Rainfall</span>
-              <span className="blue">▲ Flood</span>
-              <span className="orange">▲ Heatwave</span>
-              <span className="red">▲ Cyclone</span>
-            </div>
             <div className="line-chart">
               <div className="y-axis">
                 <span>{maxCount}</span>
@@ -174,7 +197,7 @@ export default function AnalysisView() {
         ) : (
           <Panel title="Reports over time" className="trend-panel" action={
             <div className="range-tabs">
-              {(['1H', '6H', '24H', '7D'] as const).map((x) => (
+              {RANGES.map((x) => (
                 <button
                   className={range === x ? 'active' : ''}
                   key={x}
@@ -185,12 +208,6 @@ export default function AnalysisView() {
               ))}
             </div>
           }>
-            <div className="chart-legend">
-              <span className="cyan">▲ Rainfall</span>
-              <span className="blue">▲ Flood</span>
-              <span className="orange">▲ Heatwave</span>
-              <span className="red">▲ Cyclone</span>
-            </div>
             <div className="line-chart">
               <div className="y-axis">
                 <span>0</span>
@@ -212,7 +229,7 @@ export default function AnalysisView() {
           </Panel>
         )}
 
-<Panel title="Incidents by type" eyebrow="BAR CHART">
+<Panel title="Incidents by type" eyebrow="TOP 8 · BAR CHART">
           {incidentTypeDistribution.length > 0 ? (
             <Bars data={incidentTypeDistribution} color="cyan" />
           ) : (
@@ -221,7 +238,11 @@ export default function AnalysisView() {
         </Panel>
 
         <Panel title="Reports by source" eyebrow="INGESTION MIX">
-          <Donut data={sourcesData} />
+          {reportsBySource.length > 0 ? (
+            <Donut data={reportsBySource} />
+          ) : (
+            <p className="caption">No reports match the selected filters.</p>
+          )}
         </Panel>
 <Panel title="Incidents by state" eyebrow="TOP 5 · ACTIVE INCIDENTS">
 
@@ -235,18 +256,19 @@ export default function AnalysisView() {
 
           
           <div className="ai-list">
-            {aiRiskRows.map((x) => (
-              <div className="ai-row" key={x[1]}>
+            {topIncidents.length === 0 && <p className="caption">No incidents match the selected filters.</p>}
+            {topIncidents.map((inc) => (
+              <div className="ai-row" key={inc.id}>
                 <div className="ai-icon">
                   <Bot size={14} />
                 </div>
                 <div className="ai-info">
-                  <div className="ai-event">{x[0]}</div>
-                  <div className="ai-location">{x[1]}</div>
+                  <div className="ai-event">{inc.event}</div>
+                  <div className="ai-location">{inc.place}</div>
                 </div>
-                <div className="ai-severity">{x[2]}</div>
-                <div className="ai-reports">{x[4]} reports</div>
-                <div className="ai-confidence">{x[3]}</div>
+                <div className="ai-severity">{inc.severity.toUpperCase()}</div>
+                <div className="ai-reports">{inc.reports} reports</div>
+                <div className="ai-confidence">{inc.confidence}%</div>
               </div>
             ))}
           </div>
@@ -254,35 +276,40 @@ export default function AnalysisView() {
 
         <Panel title="AI classification distribution" eyebrow="DETECTED EVENTS">
           <div className="classification-bars">
-            <Bars data={aiClassificationData as [string, number][]} color="purple" />
+            {reportsByHazard.length > 0 ? (
+              <Bars data={reportsByHazard} color="purple" />
+            ) : (
+              <p className="caption">No reports match the selected filters.</p>
+            )}
           </div>
         </Panel>
 
-        {primaryIncident && (
+        {summary.incidents > 0 && (
           <Panel title="Data reliability & source consensus" eyebrow="EVIDENCE LAYER">
             <div className="consensus-detail">
               <div className="consensus-row">
-                <span className="eyebrow">SOURCE AGREEMENT</span>
+                <span className="eyebrow">VERIFIED AGAINST IMD</span>
                 <div className="consensus-track">
-                  <i style={{ width: '84%' }} />
+                  <i style={{ width: `${summary.verifiedPct}%` }} />
                 </div>
-                <b>84% agreement</b>
+                <b>{summary.verifiedPct}% of incidents</b>
               </div>
               <div className="consensus-row">
-                <span className="eyebrow">INDEPENDENT SOURCES</span>
-                <b>{primaryIncident.independentSources} active</b>
+                <span className="eyebrow">REPORT PLATFORMS</span>
+                <b>{summary.platforms} active</b>
               </div>
               <div className="consensus-row">
                 <span className="eyebrow">CONSENSUS LEVEL</span>
-                <b className="green">{primaryIncident.consensus}</b>
+                <b className="green">{summary.level}</b>
               </div>
               <div className="consensus-row">
                 <span className="eyebrow">RELIABILITY INDEX</span>
-                <b>92.4 / 100</b>
+                <b>{summary.reliability.toFixed(1)} / 100</b>
               </div>
               <div className="consensus-note">
                 <p>
-                  Source consensus measures agreement across independent data providers. AI confidence
+                  Verification compares public reports with IMD bulletins for the same state and hazard.
+                  The reliability index is the mean credibility score of the reports in view. AI confidence
                   measures model certainty in classification. These are distinct metrics and should not
                   be conflated.
                 </p>
@@ -291,34 +318,24 @@ export default function AnalysisView() {
           </Panel>
         )}
 
-        <Panel title="Historical trend analysis" eyebrow="7-DAY COMPARISON">
+        <Panel title="Dataset summary" eyebrow="PIPELINE OUTPUT">
           <div className="trend-comparison">
             <div className="trend-stat">
-              <b className="cyan">+12.8%</b>
-              <small>WEEK-OVER-WEEK</small>
+              <b className="cyan">{summary.incidents}</b>
+              <small>INCIDENTS</small>
             </div>
             <div className="trend-stat">
-              <b>128,450</b>
-              <small>TOTAL REPORTS (7D)</small>
+              <b>{summary.reports.toLocaleString()}</b>
+              <small>PUBLIC REPORTS</small>
             </div>
             <div className="trend-stat">
-              <b className="red">8</b>
+              <b className="red">{summary.critical}</b>
               <small>CRITICAL EVENTS</small>
             </div>
             <div className="trend-stat">
-              <b className="green">−18%</b>
-              <small>RESPONSE TIME</small>
+              <b className="green">{summary.avgConfidence}%</b>
+              <small>AVG CONFIDENCE</small>
             </div>
-          </div>
-          <div className="line-chart small">
-            <svg viewBox="0 0 700 140" preserveAspectRatio="none" role="img" aria-label="7-day trend comparison">
-              <path
-                className="area"
-                d="M0 120 C60 110 80 80 140 95 S200 60 260 85 S320 50 380 70 S440 30 500 55 S560 20 620 40 L700 30 L700 140 L0 140Z"
-              />
-              <path className="line" d="M0 120 C60 110 80 80 140 95 S200 60 260 85 S320 50 380 70 S440 30 500 55 S560 20 620 40 L700 30" />
-              <path className="line secondary" d="M0 130 C60 125 80 110 140 118 S200 95 260 108 S320 85 380 95 S440 75 500 88 S560 70 620 80 L700 75" />
-            </svg>
           </div>
         </Panel>
       </div>
@@ -326,12 +343,12 @@ export default function AnalysisView() {
       <SystemHealth />
 
       <footer>
-        <span>INDRA prototype · PostgreSQL data layer · v3.0.0</span>
+        <span>INDRA prototype · synthetic data from the weather_platform_v2 pipeline</span>
         <span>
           India&apos;s National Disaster &amp; Risk Analytics <b>▲</b>
         </span>
       </footer>
-    </main>
+    </div>
   )
 }
 
