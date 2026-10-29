@@ -148,8 +148,7 @@ IMPACT_CUES = re.compile(
     r"alert|\bimd\b|evacuat|rescue|ndrf|sdrf|waterlog|visibility|kmph|km/h|\bmm\b|\bcm\b|°c|degrees?|power cut|"
     r"stranded|damage|uprooted|shelter|delayed|covering|floating|collapsed|blocked|"
     r"stopped|suspended|cancelled|halted|sadak band|fasal|madad|light chali|gaon|सड़क|फसल|बिजली गुल|अलर्ट|"
-    r"दृश्यता|तापमान|जलभराव|बंद|marooned|rescuing|struck|transformer|branches down|power gone|heat ?stroke|sun ?stroke|"
-    r"cattle|crops?\b", re.I)
+    r"दृश्यता|तापमान|जलभराव|बंद", re.I)
 QUANTITY = re.compile(r"\d+(?:\.\d+)?\s*(?:mm|cm|kmph|km/h|°c|°|degrees?|m\b|metres?|meters?|%)", re.I)
 
 # contexts that make weather words figurative / entertainment / unrelated
@@ -159,9 +158,7 @@ NEGATIVE_CONTEXT = re.compile(
     r"flood of (emotions|tears|memories)|heat of the moment|cold coffee|cold war|fog of (war|uncertainty)|"
     r"lightning mcqueen|cars 3|pubg|bgmi|ps5|gta|recipe|biryani|sensex|nifty|stocks?|parliament|opposition|"
     r"hot take|hot seat|heated debate|political storm|perfect storm|brainstorm|rewatch(ing)?|streaming|stream it|"
-    r"shah rukh|dhoni|kohli|arijit|tufan|"
-    r"planning a trip|hope the weather|favou?rite season|which umbrella|throwback|collection launch|heat pump|"
-    r"nothing to worry|cool nickname|calls himself)\b|फिल्म|समीक्षा|गाना", re.I)
+    r"shah rukh|dhoni|kohli|arijit|tufan)\b|फिल्म|समीक्षा|गाना", re.I)
 
 # ---------------------------------------------------------------- spam lexicon
 SHORTENERS = re.compile(r"\b(?:bit\.ly|tinyurl\.com|cutt\.ly|rb\.gy|is\.gd|t\.me|wa\.me|goo\.gl|shorturl\.at)/", re.I)

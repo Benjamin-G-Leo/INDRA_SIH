@@ -43,17 +43,7 @@ logged in `rejected_records` with reason `record_id_conflict`. See CHANGELOG.md.
 
 ## Dataset notes
 * 5000 raw rows are deliberately noisy: ~6% spam, ~7% irrelevant, ~10% duplicates/reposts, ~3% resent IMD
-  bulletins, messy formats, typos, Hinglish and Hindi text. Expect about 4250 clean rows after processing.
+  bulletins, messy formats, typos, Hinglish and Hindi text. Expect about 4270 clean rows after processing.
 * `event_id` links IMD and public rows; `hazard_label` is the ML target; `_gt_noise` is ground truth used only
   by the evaluation printout (it never influences a filter decision).
 * Synthetic data: values follow IMD-style thresholds but are not real observations.
-
-## ML hazard classifier (train_classifier.py)
-```powershell
-pip install -r requirements.txt
-python ingest.py --reset          # fills the database
-python train_classifier.py        # trains on split=train, prints val/test/hand-written scores, saves models/hazard_clf.joblib
-```
-TF-IDF (words + character n-grams) -> logistic regression. Best used as a **hybrid**: keep the rule tag when a rule fires,
-ask the model otherwise. `tests/hand_labeled.csv` (113 posts written by hand, not by the generator) is the score to quote.
-Scores on the synthetic splits are optimistic because the generator reuses templates; swap in real posts when you get API access.

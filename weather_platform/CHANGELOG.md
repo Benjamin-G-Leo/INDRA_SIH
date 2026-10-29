@@ -1,15 +1,5 @@
 # Changelog
 
-## Pass 3 - more realistic data + fixes
-- **Generator:** ~45% of genuine posts now use extra phrasings, ~12% describe the event with NO hazard keyword (only ML can label
-  them), ~8% are vague / sarcastic / questions / forecasts / mixed-hazard. Added SMS short-forms, 3 typo kinds, 8 weather-word
-  non-events (hard negatives) and 2% annotator label noise (`hazard_label` can be wrong; true value in `_gt_hazard`).
-- **Fixed eval:** duplicates are scored per original/copy pair (`_gt_dup_of`), so keeping the copy instead of the original is no
-  longer counted as a lost genuine record. `genuine_lost` ignores dedupe decisions.
-- **Lexicons:** extra impact cues and non-event phrases (trip planning, throwback, nickname ...).
-- **Repo:** removed the accidental nested copy `weather_platform/weather_platform/`, added `.gitignore`, db file untracked.
-- Rule tagger coverage is now ~90% (was 98%): the rest is the ML model's job.
-
 ## Pass 2 - robustness fixes + regression tests
 - **Fixed:** Hinglish "gaya" ("went/happened"), "puri" (food) and "surat" (face) were read as the cities Gaya, Puri, Surat,
   giving wrong state/district and inflating relevance. They now count only when Capitalised in mixed-case text.
