@@ -9,7 +9,7 @@ Ingestion + processing pipeline:  CSV feeds -> raw landing -> parse -> validate 
 Swap the two read_csv() calls for a Kafka consumer / API poller: everything after "landing" works on dicts.
 """
 import argparse, csv, hashlib, json, os, uuid
-from collections import Counter, defaultdict
+from collections import Counter
 from datetime import datetime, timezone
 
 import processing as P

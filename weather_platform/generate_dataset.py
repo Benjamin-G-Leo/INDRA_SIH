@@ -13,7 +13,7 @@ Rows are linked through `event_id`.  Noise rows (spam / irrelevant) have no even
 `hazard_label` is the ground-truth label for ML; `_gt_noise` is ground truth used ONLY to
 evaluate the cleaning pipeline (the pipeline never uses it to make decisions).
 """
-import argparse, csv, math, os, random
+import argparse, csv, os, random
 from datetime import datetime, timedelta, timezone
 
 from lexicons import GEO, HAZARDS, HAZARD_ALIASES, DISTRICT_ALIASES
@@ -446,7 +446,6 @@ def noise_row(kind):
 def make_dup(o):
     d = dict(o)
     kind = random.choice(["exact", "repost", "near"])
-    t0 = None
     d["source_handle"] = o["source_handle"] if kind == "exact" else rand_handle()
     if kind == "repost":
         if o["source"] == "twitter_x": d["text"] = f"RT {o['source_handle']}: " + o["text"]
