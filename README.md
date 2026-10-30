@@ -5,6 +5,8 @@
 INDRA combines official weather bulletins (IMD) with crowd-sourced reports (social media, news, citizen apps) to spot
 weather hazards early, judge how trustworthy each report is, and surface confirmed incidents to responders on a live dashboard.
 
+> **Live demo:** <https://indra-dashboard-zeta.vercel.app> (the dashboard, hosted on Vercel; shows a recorded synthetic dataset)
+>
 > **Status: working prototype.** Official IMD and social-media (Meta, X, ...) API keys are not available yet, so the data
 > pipeline runs on realistic **synthetic data**. Every component that touches data is written so a live feed can replace the CSV
 > reader later without changing the rest of the pipeline.
@@ -159,6 +161,8 @@ The hand-written score is the one to quote. Scores on synthetic splits are optim
 
 [`dashboard_prototype_2/`](dashboard_prototype_2/) is the frontend: **Next.js, React, TypeScript and Tailwind CSS**.
 
+**Live:** <https://indra-dashboard-zeta.vercel.app>. Hosted on Vercel from the `dashboard_prototype_2/` folder and linked to this repository. The site serves the committed `public/data/indra-dataset.json`; to update it, run `export_dashboard.py`, then commit and push. Vercel installs with `npm ci` (set in the project settings) because the repo also contains an out-of-date `pnpm-lock.yaml`.
+
 ![Home: incident map, KPI cards and alert stream](Project%20Report/screenshots/dashboard_home.png)
 
 - **Home:** filter toolbar, a live intelligence map of India (markers coloured by IMD severity), an incident report panel that drills from state to district to incident, KPI cards, and a red/orange/yellow alert stream.
@@ -193,6 +197,7 @@ Still demonstration values: the KPI change percentages (for example +12.8%), the
 | Dashboard | The floating "?" help button overlaps page content (alert tabs, timestamps) | Minor visual issue |
 | Dashboard | The donut total ("719 TOTAL REPORTS") renders below the ring instead of inside it | Minor visual issue |
 | Dashboard | `useFilterState` in `FilterContext.tsx` duplicates `useFilters` in `FilterToolbar.tsx` | Dead duplicate code |
+| Dashboard repo | `pnpm-lock.yaml` is out of date next to `package-lock.json` (a default Vercel install fails on it) | Worked around with `npm ci` in the Vercel project settings; deleting the pnpm lockfile is the proper fix |
 | Dashboard repo | `dashboard_prototype_2/` still tracks about 35 development scratch files (build logs, `fix_*.py`, `__pycache__`, `tsconfig.tsbuildinfo`) | Repo clutter; `tsc` keeps modifying the tracked `tsbuildinfo` |
 | Pipeline | About 12 genuine posts per 5,000 are wrongly rejected, mostly ones that describe an event without any weather word | Small data loss |
 | Pipeline | Duplicate detection works within one batch only | Reposts arriving in a later run are not caught |
